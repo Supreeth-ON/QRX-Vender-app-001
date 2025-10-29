@@ -18,8 +18,8 @@ export default function KitchenManagement() {
       <PageHeader title="Kitchen Management" />
       
       <div className="p-4 md:p-6">
-        <div className="mb-6">
-          <h2 className="text-xl md:text-2xl font-semibold text-center uppercase tracking-wide">Food Counters</h2>
+        <div className="mb-4">
+          <h2 className="text-xl md:text-2xl font-semibold text-center uppercase tracking-wide text-primary">Food Counters</h2>
         </div>
 
         {/* Mobile-First Grid Layout with Full-Width Main Counter */}

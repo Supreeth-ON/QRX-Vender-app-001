@@ -37,19 +37,13 @@ export default function CounterDetails() {
     { id: "3", name: "Idli Vada", icon: "🍽️" },
   ]);
 
-  const counterIcons: Record<string, string> = {
-    "Main Counter": "🍽️",
-    "Chaat Counter": "🥙",
-    "Coffee & Tea": "☕",
-    "Desserts": "🍰",
-    "Dosa Counter": "🥞",
-    "Beverages": "🥤",
-    "Rice Varieties": "🍚",
-    "Breakfast": "🌅",
-    "Snacks Bar": "🍿",
+  const counterImages: Record<string, string> = {
+    "Main Counter": "/images/counter-main.png",
+    "Snacks Counter": "/images/counter-snacks.png",
+    "Coffee/Tea Counter": "/images/counter-coffee.png",
   };
 
-  const counterIcon = counterIcons[counterName || ""] || "🍽️";
+  const counterImage = counterImages[counterName || ""] || "/images/counter-main.png";
 
   const handleSaveChanges = () => {
     toast({
@@ -82,9 +76,13 @@ export default function CounterDetails() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{counterIcon}</span>
-            <h1 className="text-xl md:text-2xl font-bold">{counterName}</h1>
+          <div className="flex items-center gap-3">
+            <img 
+              src={counterImage} 
+              alt={counterName || "Counter"} 
+              className="h-8 w-8 md:h-10 md:w-10 object-contain"
+            />
+            <h1 className="text-xl md:text-2xl font-bold text-primary">{counterName}</h1>
           </div>
         </div>
       </div>

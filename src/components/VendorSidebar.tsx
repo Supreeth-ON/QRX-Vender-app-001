@@ -40,7 +40,7 @@ export function VendorSidebar() {
           <SheetContent side="left" className="w-[280px] p-0">
             <SheetHeader className="border-b border-border p-6">
               <SheetTitle className="flex items-center gap-3">
-                <div className="h-8 w-8 bg-gradient-to-r from-primary to-accent rounded" style={{ maskImage: `url(${qrxLogo})`, maskSize: 'contain', maskRepeat: 'no-repeat', WebkitMaskImage: `url(${qrxLogo})`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat' }} />
+                <QrCode className="h-8 w-8 text-primary" />
                 <span className="text-[1.701rem] font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent tracking-wide">
                   QRX - Vendor
                 </span>
@@ -74,8 +74,8 @@ export function VendorSidebar() {
         </Sheet>
         
         <div className="flex items-center gap-2">
-          <QrCode className="h-6 w-6" style={{ color: '#4169E1' }} />
-          <h1 className="text-[1.134rem] font-bold tracking-wide" style={{ color: '#4169E1' }}>
+          <QrCode className="h-6 w-6 text-primary" />
+          <h1 className="text-[1.361rem] font-bold tracking-wide text-primary">
             QRX
           </h1>
         </div>

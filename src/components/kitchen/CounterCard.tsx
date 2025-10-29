@@ -25,7 +25,7 @@ export function CounterCard({ icon, name, counterId, isFullWidth }: CounterCardP
         <img 
           src={icon} 
           alt={name}
-          className={`object-contain filter grayscale ${
+          className={`object-contain ${
             isFullWidth ? 'h-12 w-12 md:h-16 md:w-16' : 'h-10 w-10 md:h-14 md:w-14'
           }`}
         />
