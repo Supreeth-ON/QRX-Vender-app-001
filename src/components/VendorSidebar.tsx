@@ -1,4 +1,4 @@
-import { LayoutDashboard, Menu as MenuIcon, Pause, BarChart3, Settings, User, HelpCircle, LogOut, Menu, ChefHat, Users } from "lucide-react";
+import { LayoutDashboard, Menu as MenuIcon, Pause, BarChart3, Settings, User, HelpCircle, LogOut, Menu, ChefHat, Users, QrCode } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useState } from "react";
 import qrxLogo from "@/assets/qrx-logo.png";
@@ -74,9 +74,9 @@ export function VendorSidebar() {
         </Sheet>
         
         <div className="flex items-center gap-2">
-          <div className="h-6 w-6 bg-gradient-to-r from-primary to-accent rounded" style={{ maskImage: `url(${qrxLogo})`, maskSize: 'contain', maskRepeat: 'no-repeat', WebkitMaskImage: `url(${qrxLogo})`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat' }} />
-          <h1 className="text-[1.134rem] font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent tracking-wide">
-            QRX - Vendor
+          <QrCode className="h-6 w-6" style={{ color: '#4169E1' }} />
+          <h1 className="text-[1.134rem] font-bold tracking-wide" style={{ color: '#4169E1' }}>
+            QRX
           </h1>
         </div>
       </div>
