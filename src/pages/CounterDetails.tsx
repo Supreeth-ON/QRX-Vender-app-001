@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, QrCode, Download, Printer, Utensils, Monitor, Smartphone, Save, Trash2, Plus, X } from "lucide-react";
+import { ArrowLeft, Users, QrCode, Download, Share2, Utensils, Save, Trash2, X, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -29,6 +29,9 @@ export default function CounterDetails() {
   const [staffCount, setStaffCount] = useState(1);
   const [assignedStaff, setAssignedStaff] = useState<{ id: string; name: string }[]>([]);
   const [displayMode, setDisplayMode] = useState(false);
+  const [mobileKDSMode, setMobileKDSMode] = useState(true);
+  const [qrCodeGenerated, setQrCodeGenerated] = useState(false);
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
 
   // Mock dishes data
   const [assignedDishes] = useState([
@@ -64,6 +67,44 @@ export default function CounterDetails() {
     setAssignedStaff(assignedStaff.filter((s) => s.id !== staffId));
   };
 
+  const handleGenerateQR = () => {
+    setQrCodeGenerated(true);
+    toast({
+      title: "QR Code Generated",
+      description: "Counter access QR code has been generated successfully.",
+    });
+  };
+
+  const handleRegenerateQR = () => {
+    setQrCodeGenerated(true);
+    setShowRegenerateDialog(false);
+    toast({
+      title: "QR Code Regenerated",
+      description: "New QR code generated. Previous QR code is now void.",
+    });
+  };
+
+  const handleShareQR = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${counterName} Access QR`,
+          text: `Scan this QR code to access ${counterName}`,
+        });
+      } catch (err) {
+        toast({
+          title: "Share cancelled",
+          description: "QR code sharing was cancelled.",
+        });
+      }
+    } else {
+      toast({
+        title: "Share not supported",
+        description: "Your browser doesn't support sharing.",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
@@ -96,7 +137,7 @@ export default function CounterDetails() {
           </TabsTrigger>
           <TabsTrigger value="settings" className="gap-2">
             <Users className="h-4 w-4" />
-            Settings
+            Counter Setup
           </TabsTrigger>
         </TabsList>
 
@@ -105,11 +146,11 @@ export default function CounterDetails() {
           <DishOrderTable counterName={counterName || ""} />
         </TabsContent>
 
-        {/* Settings Tab */}
+        {/* Counter Setup Tab */}
         <TabsContent value="settings" className="space-y-6 max-w-4xl mx-auto">
           {/* Section 1: Staff Positions */}
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Staff for this Counter</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary">Staffs behind this Counter</h2>
             
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -129,14 +170,19 @@ export default function CounterDetails() {
                 {Array.from({ length: staffCount }).map((_, index) => {
                   const staff = assignedStaff[index];
                   return (
-                    <Card key={index} className="p-4 border-dashed border-2">
+                    <Card key={index} className={`p-4 border-dashed border-2 ${
+                      staff ? 'bg-green-50 border-green-300' : 'bg-yellow-50 border-yellow-300'
+                    }`}>
                       {staff ? (
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-                              {staff.name.charAt(0)}
+                          <div className="flex flex-col gap-1 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="h-8 w-8 rounded-full bg-green-600/20 flex items-center justify-center text-sm font-medium text-green-700">
+                                {staff.name.charAt(0)}
+                              </div>
+                              <span className="text-sm font-medium text-green-700">{staff.name}</span>
                             </div>
-                            <span className="text-sm font-medium">{staff.name}</span>
+                            <span className="text-xs text-green-600 ml-10">Occupied</span>
                           </div>
                           <Button
                             variant="ghost"
@@ -148,8 +194,8 @@ export default function CounterDetails() {
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center h-8 text-muted-foreground text-sm">
-                          Empty Spot
+                        <div className="flex items-center justify-center h-8 text-yellow-700 text-sm font-medium">
+                          Vacant
                         </div>
                       )}
                     </Card>
@@ -157,31 +203,54 @@ export default function CounterDetails() {
                 })}
               </div>
 
-              <Button variant="link" className="p-0" onClick={() => navigate("/staff-management")}>
-                Manage Staff →
-              </Button>
+              <div className="grid grid-cols-2 gap-3 mt-4 max-w-md">
+                <Button variant="link" className="p-0 justify-start" onClick={() => navigate("/staff-management")}>
+                  Manage Staff →
+                </Button>
+                <Button variant="link" className="p-0 justify-start gap-2" onClick={() => navigate("/staff-management")}>
+                  <History className="h-4 w-4" />
+                  Occupancy History →
+                </Button>
+              </div>
             </div>
           </Card>
 
           {/* Section 2: Connect Staff via QR Code */}
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Counter Access QR</h2>
+            <h2 className="text-xl font-semibold mb-4 text-center text-primary">Counter Access QR</h2>
             
             <div className="flex flex-col items-center space-y-4">
-              <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed">
-                <QrCode className="h-24 w-24 text-muted-foreground" />
-              </div>
-              
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download QR
+              {!qrCodeGenerated ? (
+                <Button onClick={handleGenerateQR} className="mb-4">
+                  Generate QR Code
                 </Button>
-                <Button variant="outline" size="sm">
-                  <Printer className="h-4 w-4 mr-2" />
-                  Print QR
-                </Button>
-              </div>
+              ) : (
+                <>
+                  <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-primary">
+                    <QrCode className="h-24 w-24 text-primary" />
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4 mr-2" />
+                      Download
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleShareQR}>
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share
+                    </Button>
+                  </div>
+
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setShowRegenerateDialog(true)}
+                  >
+                    ReGenerate QR
+                  </Button>
+                </>
+              )}
               
               <p className="text-sm text-muted-foreground text-center max-w-md">
                 Staff can scan this QR in the Staff App to join this counter.
@@ -189,44 +258,47 @@ export default function CounterDetails() {
             </div>
           </Card>
 
-          {/* Section 3: Dishes served here */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Assigned Items</h2>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
-              {assignedDishes.map((dish) => (
-                <Card key={dish.id} className="p-4 text-center">
-                  <div className="text-3xl mb-2">{dish.icon}</div>
-                  <p className="text-sm font-medium">{dish.name}</p>
-                </Card>
-              ))}
-            </div>
+          {/* ReGenerate QR Warning Dialog */}
+          <AlertDialog open={showRegenerateDialog} onOpenChange={setShowRegenerateDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Regenerate QR Code?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  New QR will VOID existing QR code from its functions. Are you sure you want to continue?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>No</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRegenerateQR}>
+                  Yes
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Add/Remove Items
-              </Button>
-              <Button variant="outline">
-                Reset to AI Suggestions
-              </Button>
-            </div>
-          </Card>
-
-          {/* Section 4: Display Mode Option */}
+          {/* Section 3: Display Mode Option */}
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Display Mode</h2>
+            <h2 className="text-xl font-semibold mb-4 text-primary">Display Mode</h2>
             
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
                 <div className="space-y-1">
-                  <div className="font-medium">
-                    {displayMode ? "Dedicated Display Mode" : "Mobile KDS Mode"}
-                  </div>
+                  <div className="font-medium">Mobile KDS Mode</div>
                   <p className="text-sm text-muted-foreground">
-                    {displayMode 
-                      ? "Orders appear on a dedicated display device" 
-                      : "Orders appear on staff mobile phones"}
+                    Orders appear on staff mobile phones
+                  </p>
+                </div>
+                <Switch
+                  checked={mobileKDSMode}
+                  onCheckedChange={setMobileKDSMode}
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                <div className="space-y-1">
+                  <div className="font-medium">Dedicated Display Mode</div>
+                  <p className="text-sm text-muted-foreground">
+                    Orders appear on a dedicated display device
                   </p>
                 </div>
                 <Switch
@@ -236,7 +308,7 @@ export default function CounterDetails() {
               </div>
               
               <p className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
-                💡 Dedicated Display Mode requires a tablet/display with the staff app installed
+                💡 Both modes can work simultaneously. Dedicated Display Mode requires a tablet/display with the staff app installed.
               </p>
             </div>
           </Card>
