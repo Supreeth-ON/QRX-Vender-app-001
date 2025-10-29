@@ -2,8 +2,11 @@ import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, CheckCircle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Play, CheckCircle, Clock, ChevronDown, ChevronUp, AlertCircle, Package, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface MenuItem {
   id: string;
@@ -20,7 +23,7 @@ interface MenuItem {
 interface OrderItem extends MenuItem {
   orderId: string;
   orderQty: number;
-  status: "pending" | "cooking" | "ready" | "delivered";
+  status: "pending" | "cooking" | "ready" | "packaged" | "delivered";
   orderTime: Date;
   tableName?: string;
 }
@@ -33,6 +36,7 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<string>("all");
 
   // Load dishes from Menu Management
   useEffect(() => {
@@ -96,6 +100,8 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
         return "bg-yellow-500 hover:bg-yellow-600 text-white";
       case "ready":
         return "bg-green-500 hover:bg-green-600 text-white";
+      case "packaged":
+        return "bg-blue-500 hover:bg-blue-600 text-white";
       case "delivered":
         return "bg-gray-400 hover:bg-gray-500 text-white";
       default:
@@ -111,6 +117,8 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
         return <Play className="h-4 w-4" />;
       case "ready":
         return <CheckCircle className="h-4 w-4" />;
+      case "packaged":
+        return <Package className="h-4 w-4" />;
       default:
         return null;
     }
@@ -123,7 +131,7 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
     return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
   };
 
-  const handleStatusChange = (orderId: string, newStatus: "pending" | "cooking" | "ready" | "delivered") => {
+  const handleStatusChange = (orderId: string, newStatus: "pending" | "cooking" | "ready" | "packaged" | "delivered") => {
     setOrders(prev => 
       prev.map(order => 
         order.orderId === orderId ? { ...order, status: newStatus } : order
@@ -158,16 +166,148 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
     return () => clearInterval(interval);
   }, []);
 
+  // Filter orders by tab
+  const filteredOrders = activeTab === "all" 
+    ? sortedOrders 
+    : sortedOrders.filter(order => {
+        if (activeTab === "pending") return order.status === "pending";
+        if (activeTab === "in-progress") return order.status === "cooking";
+        if (activeTab === "ready") return order.status === "ready" || order.status === "packaged";
+        if (activeTab === "completed") return order.status === "delivered";
+        return true;
+      });
+
+  // Count orders by status
+  const pendingCount = orders.filter(o => o.status === "pending").length;
+  const inProgressCount = orders.filter(o => o.status === "cooking").length;
+  const readyCount = orders.filter(o => o.status === "ready" || o.status === "packaged").length;
+  const completedCount = orders.filter(o => o.status === "delivered").length;
+
+  // Calculate metrics
+  const activeOrdersCount = orders.filter(o => o.status !== "delivered").length;
+  const avgCookingTime = orders.length > 0 
+    ? Math.floor(orders.reduce((sum, o) => sum + (Date.now() - o.orderTime.getTime()), 0) / orders.length / 60000)
+    : 0;
+  const completedToday = completedCount;
+  
+  // Find peak dish
+  const dishCounts = orders.reduce((acc, order) => {
+    acc[order.name] = (acc[order.name] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const peakDish = Object.entries(dishCounts).sort(([, a], [, b]) => b - a)[0]?.[0] || "N/A";
+
+  // Check for delayed orders (more than prep time + 5 minutes)
+  const delayedOrders = orders.filter(order => {
+    if (order.status === "delivered") return false;
+    const elapsedMinutes = (Date.now() - order.orderTime.getTime()) / 60000;
+    return elapsedMinutes > (order.prepTime + 5);
+  });
+
   return (
     <div className="space-y-4">
+      {/* Micro Dashboard */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeOrdersCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Avg Cook Time</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{avgCookingTime}m</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Completed Today</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{completedToday}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="h-4 w-4" />
+              Peak Dish
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm font-semibold truncate">{peakDish}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Smart Alerts */}
+      {delayedOrders.length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {delayedOrders.length} order(s) delayed! Order #{delayedOrders[0].orderId.slice(-4)} is {Math.floor((Date.now() - delayedOrders[0].orderTime.getTime()) / 60000)}m overdue.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {pendingCount > 10 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Large queue alert: {pendingCount} pending orders in this counter.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Order Queue Tabs */}
       <div className="bg-card rounded-lg border shadow-sm">
         <div className="p-4 border-b bg-muted/50">
-          <h3 className="font-semibold">Active Orders ({orders.length})</h3>
-          <p className="text-sm text-muted-foreground">Real-time order tracking</p>
+          <h3 className="font-semibold">Live Order Queue</h3>
+          <p className="text-sm text-muted-foreground">Real-time order tracking & management</p>
         </div>
         
-        <div className="overflow-x-auto">
-          <Table>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full justify-start rounded-none border-b bg-transparent p-0 h-auto">
+            <TabsTrigger 
+              value="all" 
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+            >
+              All Orders {orders.length > 0 && <Badge variant="secondary" className="ml-2">{orders.length}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="pending"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+            >
+              Pending {pendingCount > 0 && <Badge variant="destructive" className="ml-2">{pendingCount}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="in-progress"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+            >
+              In Progress {inProgressCount > 0 && <Badge className="ml-2 bg-yellow-500">{inProgressCount}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ready"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+            >
+              Ready {readyCount > 0 && <Badge className="ml-2 bg-green-500">{readyCount}</Badge>}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="completed"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+            >
+              Completed {completedCount > 0 && <Badge variant="secondary" className="ml-2">{completedCount}</Badge>}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab} className="mt-0">
+            <div className="overflow-x-auto">
+              <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
                 <TableHead className="w-12"></TableHead>
@@ -180,14 +320,14 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedOrders.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No active orders. Waiting for orders...
                   </TableCell>
                 </TableRow>
               ) : (
-                sortedOrders.map((order) => (
+                filteredOrders.map((order) => (
                   <>
                     <TableRow
                       key={order.orderId}
@@ -272,10 +412,21 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
                             <Button
                               size="sm"
                               variant="default"
+                              onClick={() => handleStatusChange(order.orderId, "packaged")}
+                              className="text-xs h-7 bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Package className="h-3 w-3 mr-1" />
+                              Package
+                            </Button>
+                          )}
+                          {order.status === "packaged" && (
+                            <Button
+                              size="sm"
+                              variant="default"
                               onClick={() => handleStatusChange(order.orderId, "delivered")}
                               className="text-xs h-7 bg-gray-600 hover:bg-gray-700"
                             >
-                              Deliver
+                              Complete
                             </Button>
                           )}
                           {order.status !== "pending" && (
@@ -325,7 +476,9 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
               )}
             </TableBody>
           </Table>
-        </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* All Available Dishes */}
