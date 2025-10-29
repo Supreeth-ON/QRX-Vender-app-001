@@ -18,6 +18,7 @@ import OffersSliders from "./pages/OffersSliders";
 import PausedDishes from "./pages/PausedDishes";
 import KitchenManagement from "./pages/KitchenManagement";
 import StaffManagement from "./pages/StaffManagement";
+import CounterDetails from "./pages/CounterDetails";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/paused-dishes" element={<PausedDishes />} />
               <Route path="/category/:category" element={<CategoryDetails />} />
               <Route path="/kitchen-management" element={<KitchenManagement />} />
+              <Route path="/counter/:counterName" element={<CounterDetails />} />
               <Route path="/staff-management" element={<StaffManagement />} />
               <Route path="/master-pause" element={<MasterPause />} />
               <Route path="/orders-analytics" element={<OrdersAnalytics />} />
