@@ -1,13 +1,19 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { CounterCard } from "@/components/kitchen/CounterCard";
 import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed } from "lucide-react";
+import { Plus, UtensilsCrossed, Coffee, Pizza, IceCream, ChefHat, Soup, Sandwich } from "lucide-react";
 import { useState } from "react";
 
 const defaultCounters = [
   { id: "main", name: "Main Counter", icon: "🍽️" },
   { id: "chaat", name: "Chaat Counter", icon: "🥙" },
-  { id: "coffee", name: "Coffee & Tea Counter", icon: "☕" },
+  { id: "coffee", name: "Coffee & Tea", icon: "☕" },
+  { id: "desserts", name: "Desserts", icon: "🍰" },
+  { id: "dosa", name: "Dosa Counter", icon: "🥞" },
+  { id: "beverages", name: "Beverages", icon: "🥤" },
+  { id: "rice", name: "Rice Varieties", icon: "🍚" },
+  { id: "breakfast", name: "Breakfast", icon: "🌅" },
+  { id: "snacks", name: "Snacks Bar", icon: "🍿" },
 ];
 
 export default function KitchenManagement() {
@@ -17,17 +23,19 @@ export default function KitchenManagement() {
     <div className="min-h-screen pb-24">
       <PageHeader title="Kitchen Management" />
       
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="flex items-center gap-2 mb-6">
           <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />
-          <p className="text-lg text-muted-foreground">Manage all service counters</p>
+          <p className="text-sm md:text-lg text-muted-foreground">Manage all service counters</p>
         </div>
 
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold mb-4">Food Counters</h2>
+        <div className="mb-4">
+          <h2 className="text-xl md:text-2xl font-semibold mb-2">Food Counters</h2>
+          <p className="text-sm text-muted-foreground">Tap any counter to view active orders</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Mobile-First 3x3 Grid Layout */}
+        <div className="grid grid-cols-3 gap-3 md:gap-4 max-w-2xl mx-auto">
           {defaultCounters.map((counter) => (
             <CounterCard
               key={counter.id}
