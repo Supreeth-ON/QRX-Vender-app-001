@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, QrCode, Download, Share2, Utensils, Save, Trash2, X, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DishOrderTable } from "@/components/kitchen/DishOrderTable";
+import { cn } from "@/lib/utils";
 
 export default function CounterDetails() {
   const { counterName } = useParams<{ counterName: string }>();
@@ -32,6 +33,8 @@ export default function CounterDetails() {
   const [mobileKDSMode, setMobileKDSMode] = useState(true);
   const [qrCodeGenerated, setQrCodeGenerated] = useState(false);
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [currentTab, setCurrentTab] = useState("orders");
 
   // Mock dishes data
   const [assignedDishes] = useState([
@@ -49,11 +52,18 @@ export default function CounterDetails() {
   const counterImage = counterImages[counterName || ""] || "/images/counter-main.png";
 
   const handleSaveChanges = () => {
+    setHasChanges(false);
     toast({
       title: "Settings saved",
       description: "Counter settings have been saved successfully.",
     });
   };
+
+  // Track changes
+  useEffect(() => {
+    const timeout = setTimeout(() => setHasChanges(true), 500);
+    return () => clearTimeout(timeout);
+  }, [staffCount, displayMode, mobileKDSMode, assignedStaff]);
 
   const handleDeleteCounter = () => {
     toast({
@@ -129,7 +139,7 @@ export default function CounterDetails() {
       </div>
       
       {/* Tabs for Orders and Settings */}
-      <Tabs defaultValue="orders" className="p-4 md:p-6">
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="p-4 md:p-6">
         <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-6">
           <TabsTrigger value="orders" className="gap-2">
             <Utensils className="h-4 w-4" />
@@ -316,37 +326,62 @@ export default function CounterDetails() {
       </Tabs>
 
       {/* Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 flex gap-3 z-20 shadow-lg">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row gap-3 justify-between w-full">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="w-full sm:w-auto gap-2">
-                <Trash2 className="h-4 w-4" />
-                Delete Counter
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete the {counterName} and remove all associated staff assignments and dish configurations.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteCounter}>
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+      {currentTab === "settings" && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 flex gap-3 z-20 shadow-lg">
+          <div className="max-w-4xl mx-auto flex gap-2 justify-center w-full">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Delete Counter
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete the {counterName} and remove all associated staff assignments and dish configurations.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteCounter}>
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
-          <Button onClick={handleSaveChanges} className="w-full sm:w-auto gap-2">
-            <Save className="h-4 w-4" />
-            Save Changes
-          </Button>
+            <Button 
+              onClick={handleSaveChanges} 
+              className={cn(
+                "gap-2",
+                hasChanges && "animate-pulse ring-2 ring-primary"
+              )}
+            >
+              <Save className="h-4 w-4" />
+              Save Changes
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
+      
+      {currentTab === "orders" && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 flex gap-3 z-20 shadow-lg">
+          <div className="max-w-4xl mx-auto flex justify-center w-full">
+            <Button 
+              onClick={handleSaveChanges} 
+              className={cn(
+                "gap-2",
+                hasChanges && "animate-pulse ring-2 ring-primary"
+              )}
+            >
+              <Save className="h-4 w-4" />
+              Save Changes
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

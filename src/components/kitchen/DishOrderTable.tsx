@@ -4,9 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Play, CheckCircle, Clock, ChevronDown, ChevronUp, AlertCircle, Package, TrendingUp } from "lucide-react";
+import { Play, CheckCircle, Clock, ChevronDown, ChevronUp, AlertCircle, Package, TrendingUp, Plus, Trash2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface MenuItem {
   id: string;
@@ -37,29 +56,50 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [showAddDish, setShowAddDish] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [allDishes, setAllDishes] = useState<MenuItem[]>([]);
+  const [dishToDelete, setDishToDelete] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Load dishes from Menu Management
   useEffect(() => {
     const loadMenuItems = () => {
       const saved = localStorage.getItem("menuItems");
+      const counterDishes = localStorage.getItem(`counter_dishes_${counterName}`);
+      
       if (saved) {
-        const items: MenuItem[] = JSON.parse(saved);
+        const allItems: MenuItem[] = JSON.parse(saved);
+        setAllDishes(allItems);
+        let filteredItems = allItems;
         
-        // Filter dishes based on counter type
-        let filteredItems = items;
-        if (counterName.toLowerCase().includes("coffee") || counterName.toLowerCase().includes("tea")) {
-          filteredItems = items.filter(item => 
-            item.category === "BEVERAGES" || item.category === "DESSERTS"
-          );
-        } else if (counterName.toLowerCase().includes("chaat")) {
-          filteredItems = items.filter(item => 
-            item.category === "SNACKS"
-          );
+        // If counter has custom dishes assigned, use those
+        if (counterDishes) {
+          const customDishIds = JSON.parse(counterDishes);
+          filteredItems = allItems.filter(item => customDishIds.includes(item.id));
         } else {
-          // Main counter gets everything except beverages
-          filteredItems = items.filter(item => 
-            item.category !== "BEVERAGES" && item.category !== "SNACKS"
-          );
+          // Auto-assign dishes based on counter type
+          if (counterName.toLowerCase().includes("coffee") || counterName.toLowerCase().includes("tea")) {
+            filteredItems = allItems.filter(item => 
+              item.category === "BEVERAGES"
+            );
+          } else if (counterName.toLowerCase().includes("snack")) {
+            filteredItems = allItems.filter(item => 
+              item.category === "SNACKS"
+            );
+          } else if (counterName.toLowerCase().includes("chaat")) {
+            filteredItems = allItems.filter(item => 
+              item.category === "SNACKS"
+            );
+          } else if (counterName.toLowerCase().includes("main")) {
+            // Main counter gets main dishes
+            filteredItems = allItems.filter(item => 
+              !["BEVERAGES", "SNACKS", "DESSERTS"].includes(item.category)
+            );
+          } else {
+            // New counters start empty
+            filteredItems = [];
+          }
         }
         
         setMenuItems(filteredItems);
@@ -76,6 +116,32 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [counterName]);
+
+  const handleAddDish = (dish: MenuItem) => {
+    const currentDishIds = menuItems.map(item => item.id);
+    if (!currentDishIds.includes(dish.id)) {
+      const newDishIds = [...currentDishIds, dish.id];
+      localStorage.setItem(`counter_dishes_${counterName}`, JSON.stringify(newDishIds));
+      setMenuItems([...menuItems, dish]);
+      toast({
+        title: "Dish added",
+        description: `${dish.name} has been added to ${counterName}`,
+      });
+    }
+    setShowAddDish(false);
+    setSearchQuery("");
+  };
+
+  const handleRemoveDish = (dishId: string) => {
+    const dishIds = menuItems.filter(item => item.id !== dishId).map(item => item.id);
+    localStorage.setItem(`counter_dishes_${counterName}`, JSON.stringify(dishIds));
+    setMenuItems(menuItems.filter(item => item.id !== dishId));
+    setDishToDelete(null);
+    toast({
+      title: "Dish removed",
+      description: "The dish has been removed from this counter",
+    });
+  };
 
   // Simulate some active orders for demo (in production, this would come from real orders)
   useEffect(() => {
@@ -483,32 +549,47 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
 
       {/* All Available Dishes */}
       <div className="bg-card rounded-lg border shadow-sm">
-        <div className="p-4 border-b bg-muted/50">
-          <h3 className="font-semibold">Available Dishes ({menuItems.length})</h3>
-          <p className="text-sm text-muted-foreground">Synced from Menu Management</p>
+        <div className="p-4 border-b bg-muted/50 flex items-center justify-between">
+          <div>
+            <h3 className="font-semibold">Available Dishes ({menuItems.length})</h3>
+            <p className="text-sm text-muted-foreground">Synced from Menu Management</p>
+          </div>
+          <Button size="sm" onClick={() => setShowAddDish(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Dish
+          </Button>
         </div>
         
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
+                <TableHead className="w-12"></TableHead>
                 <TableHead>Dish Name</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead>Price</TableHead>
                 <TableHead>Prep Time</TableHead>
-                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {menuItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    No dishes assigned to this counter yet. Add dishes in Menu Management.
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    No dishes assigned to this counter yet. Click "Add Dish" to add dishes.
                   </TableCell>
                 </TableRow>
               ) : (
                 menuItems.map((item) => (
                   <TableRow key={item.id}>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => setDishToDelete(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {item.type && (
@@ -527,15 +608,7 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
                     <TableCell className="text-sm text-muted-foreground">
                       {item.category}
                     </TableCell>
-                    <TableCell>₹{item.price}</TableCell>
                     <TableCell>{item.prepTime} min</TableCell>
-                    <TableCell>
-                      {item.paused ? (
-                        <Badge variant="destructive" className="text-xs">Paused</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Active</Badge>
-                      )}
-                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -543,6 +616,85 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
           </Table>
         </div>
       </div>
+
+      {/* Add Dish Dialog */}
+      <Dialog open={showAddDish} onOpenChange={setShowAddDish}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Add Dish to {counterName}</DialogTitle>
+            <DialogDescription>
+              Search and select a dish from your menu to add to this counter
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search dishes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <div className="max-h-[400px] overflow-y-auto border rounded-lg">
+              {allDishes
+                .filter(dish => 
+                  !menuItems.find(item => item.id === dish.id) &&
+                  (searchQuery === "" || 
+                   dish.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                   dish.category.toLowerCase().includes(searchQuery.toLowerCase()))
+                )
+                .map(dish => (
+                  <div
+                    key={dish.id}
+                    className="p-4 border-b last:border-b-0 hover:bg-muted/50 cursor-pointer flex items-center justify-between"
+                    onClick={() => handleAddDish(dish)}
+                  >
+                    <div className="flex items-center gap-3">
+                      {dish.type && (
+                        <div
+                          className={cn(
+                            "h-2 w-2 rounded-full",
+                            dish.type === "veg" && "bg-green-500",
+                            dish.type === "non-veg" && "bg-red-500",
+                            dish.type === "egg" && "bg-yellow-500"
+                          )}
+                        />
+                      )}
+                      <div>
+                        <p className="font-medium">{dish.name}</p>
+                        <p className="text-sm text-muted-foreground">{dish.category}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline">
+                      Add
+                    </Button>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!dishToDelete} onOpenChange={() => setDishToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Dish?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this dish from {counterName}? This will not delete the dish from your menu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => dishToDelete && handleRemoveDish(dishToDelete)}>
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
