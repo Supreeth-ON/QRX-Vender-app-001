@@ -20,11 +20,6 @@ export function CounterCard({ icon, name, counterId, isFullWidth }: CounterCardP
       onClick={() => navigate(`/counter/${encodeURIComponent(name)}`)}
     >
       <div className="flex flex-col items-center justify-center h-full p-4 gap-2">
-        <img 
-          src={icon} 
-          alt={name}
-          className="h-12 w-12 md:h-16 md:w-16 object-contain opacity-60"
-        />
         <h3 className="font-semibold text-center group-hover:text-primary transition-colors text-sm md:text-base">
           {name}
         </h3>

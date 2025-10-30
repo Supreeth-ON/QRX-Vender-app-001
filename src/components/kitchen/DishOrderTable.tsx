@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { DishAvailabilityDialog, DishAvailability } from "./DishAvailabilityDialog";
 
 interface MenuItem {
   id: string;
@@ -37,6 +38,7 @@ interface MenuItem {
   category: string;
   paused?: boolean;
   type?: "veg" | "non-veg" | "egg";
+  availability?: DishAvailability;
 }
 
 interface OrderItem extends MenuItem {
@@ -60,6 +62,7 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [allDishes, setAllDishes] = useState<MenuItem[]>([]);
   const [dishToDelete, setDishToDelete] = useState<string | null>(null);
+  const [editingAvailability, setEditingAvailability] = useState<{ dish: MenuItem; index: number } | null>(null);
   const { toast } = useToast();
 
   // Load dishes from Menu Management
@@ -141,6 +144,76 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
       title: "Dish removed",
       description: "The dish has been removed from this counter",
     });
+  };
+
+  const handleSaveAvailability = (availability: DishAvailability) => {
+    if (!editingAvailability) return;
+    
+    const updatedItems = [...menuItems];
+    updatedItems[editingAvailability.index] = {
+      ...updatedItems[editingAvailability.index],
+      availability,
+    };
+    setMenuItems(updatedItems);
+    
+    // Save to localStorage
+    const dishIds = updatedItems.map(item => item.id);
+    localStorage.setItem(`counter_dishes_${counterName}`, JSON.stringify(dishIds));
+    localStorage.setItem(`dish_availability_${editingAvailability.dish.id}`, JSON.stringify(availability));
+    
+    toast({
+      title: "Availability updated",
+      description: `${editingAvailability.dish.name} availability has been updated`,
+    });
+    setEditingAvailability(null);
+  };
+
+  const getDishStatus = (dish: MenuItem) => {
+    if (!dish.availability || dish.availability.type === "all-day") {
+      return "Active";
+    }
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+
+    const checkTimeInRange = (start: string, end: string) => {
+      const [startHour, startMin] = start.split(":").map(Number);
+      const [endHour, endMin] = end.split(":").map(Number);
+      const startTime = startHour * 60 + startMin;
+      const endTime = endHour * 60 + endMin;
+      return currentTime >= startTime && currentTime <= endTime;
+    };
+
+    if (dish.availability.morningEnabled && 
+        dish.availability.morningStart && 
+        dish.availability.morningEnd &&
+        checkTimeInRange(dish.availability.morningStart, dish.availability.morningEnd)) {
+      return "Active";
+    }
+
+    if (dish.availability.eveningEnabled && 
+        dish.availability.eveningStart && 
+        dish.availability.eveningEnd &&
+        checkTimeInRange(dish.availability.eveningStart, dish.availability.eveningEnd)) {
+      return "Active";
+    }
+
+    return "Break";
+  };
+
+  const getAvailabilityDisplay = (dish: MenuItem) => {
+    if (!dish.availability || dish.availability.type === "all-day") {
+      return "All Day";
+    }
+
+    const parts: string[] = [];
+    if (dish.availability.morningEnabled && dish.availability.morningStart && dish.availability.morningEnd) {
+      parts.push(`${dish.availability.morningStart}-${dish.availability.morningEnd}`);
+    }
+    if (dish.availability.eveningEnabled && dish.availability.eveningStart && dish.availability.eveningEnd) {
+      parts.push(`${dish.availability.eveningStart}-${dish.availability.eveningEnd}`);
+    }
+    return parts.length > 0 ? parts.join(", ") : "Custom";
   };
 
   // Simulate some active orders for demo (in production, this would come from real orders)
@@ -566,19 +639,21 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
               <TableRow className="bg-muted/30">
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Dish Name</TableHead>
+                <TableHead>Availability</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Prep Time</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {menuItems.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No dishes assigned to this counter yet. Click "Add Dish" to add dishes.
                   </TableCell>
                 </TableRow>
               ) : (
-                menuItems.map((item) => (
+                menuItems.map((item, index) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <Button
@@ -605,10 +680,31 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
                         {item.name}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto text-primary hover:text-primary/80"
+                        onClick={() => setEditingAvailability({ dish: item, index })}
+                      >
+                        {getAvailabilityDisplay(item)}
+                      </Button>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {item.category}
                     </TableCell>
                     <TableCell>{item.prepTime} min</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={getDishStatus(item) === "Active" ? "default" : "secondary"}
+                        className={cn(
+                          getDishStatus(item) === "Active" 
+                            ? "bg-green-500 hover:bg-green-600" 
+                            : "bg-yellow-500 hover:bg-yellow-600"
+                        )}
+                      >
+                        {getDishStatus(item)}
+                      </Badge>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -695,6 +791,17 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dish Availability Dialog */}
+      {editingAvailability && (
+        <DishAvailabilityDialog
+          open={!!editingAvailability}
+          onOpenChange={(open) => !open && setEditingAvailability(null)}
+          dishName={editingAvailability.dish.name}
+          currentAvailability={editingAvailability.dish.availability || { type: "all-day" }}
+          onSave={handleSaveAvailability}
+        />
+      )}
     </div>
   );
 }

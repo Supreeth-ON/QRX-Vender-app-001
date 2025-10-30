@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, QrCode, Download, Share2, Utensils, Save, Trash2, X, History } from "lucide-react";
+import { ArrowLeft, Users, QrCode, Download, Share2, Utensils, Save, Trash2, X, History, Edit2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -35,6 +35,13 @@ export default function CounterDetails() {
   const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [currentTab, setCurrentTab] = useState("orders");
+  const [editingCounterName, setEditingCounterName] = useState(false);
+  const [editedCounterName, setEditedCounterName] = useState(counterName || "");
+  const [operationalTimingsEnabled, setOperationalTimingsEnabled] = useState(false);
+  const [morningOpen, setMorningOpen] = useState("08:00");
+  const [morningClose, setMorningClose] = useState("12:00");
+  const [eveningOpen, setEveningOpen] = useState("17:00");
+  const [eveningClose, setEveningClose] = useState("22:00");
 
   // Mock dishes data
   const [assignedDishes] = useState([
@@ -63,7 +70,7 @@ export default function CounterDetails() {
   useEffect(() => {
     const timeout = setTimeout(() => setHasChanges(true), 500);
     return () => clearTimeout(timeout);
-  }, [staffCount, displayMode, mobileKDSMode, assignedStaff]);
+  }, [staffCount, displayMode, mobileKDSMode, assignedStaff, editedCounterName, operationalTimingsEnabled, morningOpen, morningClose, eveningOpen, eveningClose]);
 
   const handleDeleteCounter = () => {
     toast({
@@ -158,6 +165,108 @@ export default function CounterDetails() {
 
         {/* Counter Setup Tab */}
         <TabsContent value="settings" className="space-y-6 max-w-4xl mx-auto">
+          {/* Counter Name Edit */}
+          <Card className="p-6">
+            <div className="flex items-center gap-4">
+              <Label className="whitespace-nowrap">Counter Name</Label>
+              {editingCounterName ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <Input
+                    value={editedCounterName}
+                    onChange={(e) => setEditedCounterName(e.target.value)}
+                    className="flex-1"
+                    autoFocus
+                  />
+                  <Button size="sm" onClick={() => setEditingCounterName(false)}>
+                    Save
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => {
+                    setEditedCounterName(counterName || "");
+                    setEditingCounterName(false);
+                  }}>
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-lg font-semibold text-primary">{editedCounterName}</span>
+                  <Button size="icon" variant="ghost" onClick={() => setEditingCounterName(true)}>
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Operational Timings */}
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4 text-primary">Operational Timings</h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                <div className="space-y-1">
+                  <div className="font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Set Counter Hours
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Define when this counter operates
+                  </p>
+                </div>
+                <Switch
+                  checked={operationalTimingsEnabled}
+                  onCheckedChange={setOperationalTimingsEnabled}
+                />
+              </div>
+
+              {operationalTimingsEnabled && (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm mb-2 block">Morning Open</Label>
+                      <Input
+                        type="time"
+                        value={morningOpen}
+                        onChange={(e) => setMorningOpen(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-2 block">Morning Close</Label>
+                      <Input
+                        type="time"
+                        value={morningClose}
+                        onChange={(e) => setMorningClose(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-center text-sm font-medium text-muted-foreground py-2 border-y">
+                    BREAK
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-sm mb-2 block">Evening Open</Label>
+                      <Input
+                        type="time"
+                        value={eveningOpen}
+                        onChange={(e) => setEveningOpen(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-2 block">Evening Close</Label>
+                      <Input
+                        type="time"
+                        value={eveningClose}
+                        onChange={(e) => setEveningClose(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
           {/* Section 1: Staff Positions */}
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4 text-primary">Staffs behind this Counter</h2>

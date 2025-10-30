@@ -1,19 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { CounterCard } from "@/components/kitchen/CounterCard";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+const defaultCounters = [
+  { id: "1", name: "Main Counter", icon: "/images/counter-main.png", isFullWidth: true },
+  { id: "2", name: "Snacks Counter", icon: "/images/counter-snacks.png" },
+  { id: "3", name: "Tea & Coffee Counter", icon: "/images/counter-coffee.png" },
+];
+
 export default function KitchenManagement() {
-  const [counters, setCounters] = useState([
-    { id: "1", name: "Main Counter", icon: "/images/counter-main.png", isFullWidth: true },
-    { id: "2", name: "Snacks Counter", icon: "/images/counter-snacks.png" },
-    { id: "3", name: "Tea & Coffee Counter", icon: "/images/counter-coffee.png" },
-  ]);
+  const [counters, setCounters] = useState(() => {
+    const saved = localStorage.getItem("counters");
+    return saved ? JSON.parse(saved) : defaultCounters;
+  });
 
   const [isAddingCounter, setIsAddingCounter] = useState(false);
   const [newCounterName, setNewCounterName] = useState("");
+
+  // Save counters to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("counters", JSON.stringify(counters));
+  }, [counters]);
 
   const handleAddCounter = () => {
     if (newCounterName.trim()) {
