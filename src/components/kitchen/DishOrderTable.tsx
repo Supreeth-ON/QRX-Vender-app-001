@@ -198,7 +198,7 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
       return "Active";
     }
 
-    return "Break";
+    return "Inactive";
   };
 
   const getAvailabilityDisplay = (dish: MenuItem) => {
@@ -681,13 +681,12 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="link"
-                        className="p-0 h-auto text-primary hover:text-primary/80"
+                      <button
+                        className="px-3 py-1 rounded-md bg-white border text-sm font-medium hover:bg-muted transition-colors text-foreground"
                         onClick={() => setEditingAvailability({ dish: item, index })}
                       >
                         {getAvailabilityDisplay(item)}
-                      </Button>
+                      </button>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {item.category}
@@ -698,8 +697,8 @@ export function DishOrderTable({ counterName }: DishOrderTableProps) {
                         variant={getDishStatus(item) === "Active" ? "default" : "secondary"}
                         className={cn(
                           getDishStatus(item) === "Active" 
-                            ? "bg-green-500 hover:bg-green-600" 
-                            : "bg-yellow-500 hover:bg-yellow-600"
+                            ? "bg-green-500 hover:bg-green-600 text-white" 
+                            : "bg-orange-500 hover:bg-orange-600 text-white"
                         )}
                       >
                         {getDishStatus(item)}

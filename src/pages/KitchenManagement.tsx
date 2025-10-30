@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const defaultCounters = [
-  { id: "1", name: "Main Counter", icon: "/images/counter-main.png", isFullWidth: true },
-  { id: "2", name: "Snacks Counter", icon: "/images/counter-snacks.png" },
-  { id: "3", name: "Tea & Coffee Counter", icon: "/images/counter-coffee.png" },
+  { id: "1", name: "Main Counter", emoji: "🥤", isFullWidth: true },
+  { id: "2", name: "Snacks Counter", emoji: "🍟" },
+  { id: "3", name: "Tea & Coffee Counter", emoji: "☕" },
 ];
 
 export default function KitchenManagement() {
@@ -16,6 +16,19 @@ export default function KitchenManagement() {
     const saved = localStorage.getItem("counters");
     return saved ? JSON.parse(saved) : defaultCounters;
   });
+
+  // Listen for counter updates
+  useEffect(() => {
+    const handleCounterUpdate = () => {
+      const saved = localStorage.getItem("counters");
+      if (saved) {
+        setCounters(JSON.parse(saved));
+      }
+    };
+    
+    window.addEventListener("counters:updated", handleCounterUpdate);
+    return () => window.removeEventListener("counters:updated", handleCounterUpdate);
+  }, []);
 
   const [isAddingCounter, setIsAddingCounter] = useState(false);
   const [newCounterName, setNewCounterName] = useState("");
@@ -30,10 +43,12 @@ export default function KitchenManagement() {
       const newCounter = {
         id: String(Date.now()),
         name: newCounterName.trim(),
-        icon: "/images/counter-main.png", // Default icon
+        emoji: "🍽️", // Default emoji
         isFullWidth: false
       };
-      setCounters([...counters, newCounter]);
+      const updatedCounters = [...counters, newCounter];
+      setCounters(updatedCounters);
+      localStorage.setItem("counters", JSON.stringify(updatedCounters));
       setNewCounterName("");
       setIsAddingCounter(false);
     }
@@ -53,7 +68,7 @@ export default function KitchenManagement() {
           {counters.map((counter) => (
             <CounterCard 
               key={counter.id}
-              icon={counter.icon}
+              emoji={counter.emoji}
               name={counter.name}
               counterId={counter.id}
               isFullWidth={counter.isFullWidth}

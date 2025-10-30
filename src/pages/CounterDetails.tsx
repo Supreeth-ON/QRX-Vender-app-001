@@ -37,11 +37,22 @@ export default function CounterDetails() {
   const [currentTab, setCurrentTab] = useState("orders");
   const [editingCounterName, setEditingCounterName] = useState(false);
   const [editedCounterName, setEditedCounterName] = useState(counterName || "");
+  const [selectedEmoji, setSelectedEmoji] = useState("🍽️");
   const [operationalTimingsEnabled, setOperationalTimingsEnabled] = useState(false);
   const [morningOpen, setMorningOpen] = useState("08:00");
   const [morningClose, setMorningClose] = useState("12:00");
   const [eveningOpen, setEveningOpen] = useState("17:00");
   const [eveningClose, setEveningClose] = useState("22:00");
+
+  // Load counter data on mount
+  useEffect(() => {
+    const counters = JSON.parse(localStorage.getItem("counters") || "[]");
+    const currentCounter = counters.find((c: any) => c.name === counterName);
+    if (currentCounter) {
+      setEditedCounterName(currentCounter.name);
+      setSelectedEmoji(currentCounter.emoji || "🍽️");
+    }
+  }, [counterName]);
 
   // Mock dishes data
   const [assignedDishes] = useState([
@@ -59,6 +70,28 @@ export default function CounterDetails() {
   const counterImage = counterImages[counterName || ""] || "/images/counter-main.png";
 
   const handleSaveChanges = () => {
+    // Save counter updates to localStorage
+    const counters = JSON.parse(localStorage.getItem("counters") || "[]");
+    const counterIndex = counters.findIndex((c: any) => c.name === counterName);
+    
+    if (counterIndex !== -1) {
+      counters[counterIndex] = {
+        ...counters[counterIndex],
+        name: editedCounterName,
+        emoji: selectedEmoji,
+        operationalTimings: operationalTimingsEnabled ? {
+          morningOpen,
+          morningClose,
+          eveningOpen,
+          eveningClose,
+        } : null,
+      };
+      localStorage.setItem("counters", JSON.stringify(counters));
+      
+      // Dispatch event to refresh Kitchen Management
+      window.dispatchEvent(new Event("counters:updated"));
+    }
+    
     setHasChanges(false);
     toast({
       title: "Settings saved",
@@ -70,9 +103,20 @@ export default function CounterDetails() {
   useEffect(() => {
     const timeout = setTimeout(() => setHasChanges(true), 500);
     return () => clearTimeout(timeout);
-  }, [staffCount, displayMode, mobileKDSMode, assignedStaff, editedCounterName, operationalTimingsEnabled, morningOpen, morningClose, eveningOpen, eveningClose]);
+  }, [staffCount, displayMode, mobileKDSMode, assignedStaff, editedCounterName, selectedEmoji, operationalTimingsEnabled, morningOpen, morningClose, eveningOpen, eveningClose]);
 
   const handleDeleteCounter = () => {
+    // Remove counter from localStorage
+    const counters = JSON.parse(localStorage.getItem("counters") || "[]");
+    const updatedCounters = counters.filter((c: any) => c.name !== counterName);
+    localStorage.setItem("counters", JSON.stringify(updatedCounters));
+    
+    // Also clean up counter-specific data
+    localStorage.removeItem(`counter_dishes_${counterName}`);
+    
+    // Dispatch event to refresh Kitchen Management
+    window.dispatchEvent(new Event("counters:updated"));
+    
     toast({
       title: "Counter deleted",
       description: "Counter has been deleted successfully.",
@@ -165,8 +209,8 @@ export default function CounterDetails() {
 
         {/* Counter Setup Tab */}
         <TabsContent value="settings" className="space-y-6 max-w-4xl mx-auto">
-          {/* Counter Name Edit */}
-          <Card className="p-6">
+          {/* Counter Name & Emoji */}
+          <Card className="p-6 space-y-4">
             <div className="flex items-center gap-4">
               <Label className="whitespace-nowrap">Counter Name</Label>
               {editingCounterName ? (
@@ -195,6 +239,26 @@ export default function CounterDetails() {
                   </Button>
                 </div>
               )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Label className="whitespace-nowrap">Counter Icon</Label>
+              <div className="flex items-center gap-2">
+                <span 
+                  className="text-3xl opacity-25 grayscale"
+                  style={{ filter: 'grayscale(100%) opacity(0.25)' }}
+                >
+                  {selectedEmoji}
+                </span>
+                <Input
+                  value={selectedEmoji}
+                  onChange={(e) => setSelectedEmoji(e.target.value)}
+                  className="w-20 text-center text-2xl"
+                  maxLength={2}
+                  placeholder="🍽️"
+                />
+                <span className="text-xs text-muted-foreground">Enter emoji</span>
+              </div>
             </div>
           </Card>
 
