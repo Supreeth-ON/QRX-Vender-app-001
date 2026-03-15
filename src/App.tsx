@@ -18,6 +18,8 @@ import OffersSliders from "./pages/OffersSliders";
 import PausedDishes from "./pages/PausedDishes";
 import KitchenManagement from "./pages/KitchenManagement";
 import StaffManagement from "./pages/StaffManagement";
+import StaffProfile from "./pages/StaffProfile";
+import NewStaff from "./pages/NewStaff";
 import CounterDetails from "./pages/CounterDetails";
 
 const queryClient = new QueryClient();
