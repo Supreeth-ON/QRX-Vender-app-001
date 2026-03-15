@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, UserCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 interface StaffMember {
   id: string;
@@ -51,10 +51,20 @@ export default function StaffManagement() {
 
 function MyStaffsTab() {
   const navigate = useNavigate();
-  const [staff] = useState<StaffMember[]>(() => {
+  const loadStaff = useCallback(() => {
     const saved = localStorage.getItem("qrx_staff_list");
     return saved ? JSON.parse(saved) : mockStaff;
-  });
+  }, []);
+
+  const [staff, setStaff] = useState<StaffMember[]>(loadStaff);
+
+  useEffect(() => {
+    const onFocus = () => setStaff(loadStaff());
+    window.addEventListener("focus", onFocus);
+    // Also reload when route changes back
+    setStaff(loadStaff());
+    return () => window.removeEventListener("focus", onFocus);
+  }, [loadStaff]);
 
   return (
     <>
