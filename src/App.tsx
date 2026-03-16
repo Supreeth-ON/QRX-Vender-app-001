@@ -20,6 +20,7 @@ import KitchenManagement from "./pages/KitchenManagement";
 import StaffManagement from "./pages/StaffManagement";
 import StaffProfile from "./pages/StaffProfile";
 import NewStaff from "./pages/NewStaff";
+import StaffAttendance from "./pages/StaffAttendance";
 import CounterDetails from "./pages/CounterDetails";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/counter/:counterName" element={<CounterDetails />} />
               <Route path="/staff-management" element={<StaffManagement />} />
               <Route path="/staff-management/profile/:staffId" element={<StaffProfile />} />
+              <Route path="/staff-management/attendance/:staffId" element={<StaffAttendance />} />
               <Route path="/staff-management/new" element={<NewStaff />} />
               <Route path="/master-pause" element={<MasterPause />} />
               <Route path="/orders-analytics" element={<OrdersAnalytics />} />
