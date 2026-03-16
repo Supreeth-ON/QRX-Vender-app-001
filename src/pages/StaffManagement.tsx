@@ -6,22 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, UserCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
-
-interface StaffMember {
-  id: string;
-  name: string;
-  department: string;
-  appointmentDate: string;
-  linkStatus: "linked" | "not_linked";
-}
-
-const mockStaff: StaffMember[] = [
-  { id: "1", name: "Rajesh Kumar", department: "Kitchen / Head Chef", appointmentDate: "2024-06-15", linkStatus: "linked" },
-  { id: "2", name: "Priya Sharma", department: "Billing / Cashier", appointmentDate: "2024-09-01", linkStatus: "not_linked" },
-  { id: "3", name: "Arun Patel", department: "Service / Waiter", appointmentDate: "2025-01-10", linkStatus: "linked" },
-  { id: "4", name: "Meena Devi", department: "Kitchen / Cook", appointmentDate: "2025-02-20", linkStatus: "not_linked" },
-  { id: "5", name: "Suresh Babu", department: "Service / Manager", appointmentDate: "2024-03-05", linkStatus: "linked" },
-];
+import { StaffMember, mockStaff } from "@/types/staff";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-IN", {
@@ -53,7 +38,8 @@ function MyStaffsTab() {
   const navigate = useNavigate();
   const loadStaff = useCallback(() => {
     const saved = localStorage.getItem("qrx_staff_list");
-    return saved ? JSON.parse(saved) : mockStaff;
+    const list: StaffMember[] = saved ? JSON.parse(saved) : mockStaff;
+    return list.filter((s) => !s.removed);
   }, []);
 
   const [staff, setStaff] = useState<StaffMember[]>(loadStaff);
@@ -61,7 +47,6 @@ function MyStaffsTab() {
   useEffect(() => {
     const onFocus = () => setStaff(loadStaff());
     window.addEventListener("focus", onFocus);
-    // Also reload when route changes back
     setStaff(loadStaff());
     return () => window.removeEventListener("focus", onFocus);
   }, [loadStaff]);
@@ -75,7 +60,6 @@ function MyStaffsTab() {
         </Button>
       </div>
 
-      {/* Column headers */}
       <div className="hidden sm:grid grid-cols-[1fr_1fr_auto_auto] gap-3 px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         <span>Name</span>
         <span>Department</span>
