@@ -20,6 +20,7 @@ import KitchenManagement from "./pages/KitchenManagement";
 import StaffManagement from "./pages/StaffManagement";
 import StaffProfile from "./pages/StaffProfile";
 import NewStaff from "./pages/NewStaff";
+import StaffAttendance from "./pages/StaffAttendance";
 import CounterDetails from "./pages/CounterDetails";
 
 const queryClient = new QueryClient();
